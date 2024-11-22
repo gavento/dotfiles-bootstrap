@@ -40,9 +40,10 @@ fi
 
 # Set shell to zsh for current user if available
 if [ -e /bin/zsh ]; then
-    echo "Changing shell to zsh for $USER"
-    $SUDO chsh -s /bin/zsh "$USER"
+    echo "Changing shell to zsh for $(id -un)"
+    $SUDO chsh -s /bin/zsh "$(id -un)"
 fi
 
 # Install the dotfiles
 curl -fL https://raw.githubusercontent.com/gavento/dotfiles/refs/heads/main/.local/bin/dotfiles | bash -s - bootstrap-apt
+
