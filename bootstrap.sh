@@ -1,32 +1,48 @@
 #!/bin/bash
 set -e -u -o pipefail
 
-inst() {
-    # If not root, then exit
-    if [ "$EUID" -ne 0 ] ; then
-        echo "Can't install missing package $1: needs to be run as root"
-        exit
+# Check for sudo if not root
+SUDO=""
+if [ "$EUID" -ne 0 ]; then
+    if ! command -v sudo &> /dev/null; then
+        echo "Neither root access nor sudo available, exitting"
+        exit 1
     fi
-    if command -v apt-get &> /dev/null ; then
-        apt-get update
-        apt-get install -y $1
-    else
-        echo "Can't install missing package $1: no known package manager found (apt)"
-        exit
-    fi
-}
-
-# Check for curl, zsh, and git being installed
-
-if ! command -v curl &> /dev/null ; then inst curl; fi
-if ! command -v zsh &> /dev/null ; then inst zsh; fi
-if ! command -v git &> /dev/null ; then inst git; fi
-
-# Set shell to be zsh if /bin/zsh exists
-if [ -e /bin/zsh ] ; then
-    chsh -s /bin/zsh
+    SUDO="sudo"
 fi
 
-# Install the gavento/dotfiles repo via curl
-curl -fL https://raw.githubusercontent.com/gavento/dotfiles/refs/heads/main/.local/bin/dotfiles | bash -s - bootstrap-apt
+NEEDED_COMMANDS="zsh sudo curl git tmux htop nano vim mc"
 
+# Check for packages that need to be installed
+missing_packages=()
+for pkg in $NEEDED_COMMANDS; do
+    if ! command -v "$pkg" &> /dev/null; then
+        missing_packages+=("$pkg")
+    fi
+done
+
+# Install missing packages if needed
+if [ ${#missing_packages[@]} -ne 0 ]; then
+    if command -v apt-get &> /dev/null; then
+        $SUDO apt-get update
+        $SUDO apt-get install -y "${missing_packages[@]}"
+    elif command -v pacman &> /dev/null; then
+        $SUDO pacman -Sy --noconfirm "${missing_packages[@]}"
+    elif command -v dnf &> /dev/null; then
+        $SUDO dnf install -y "${missing_packages[@]}"
+    elif command -v yum &> /dev/null; then
+        $SUDO yum install -y "${missing_packages[@]}"
+    else
+        echo "No supported package manager found (apt, pacman, dnf, or yum)"
+        exit 1
+    fi
+fi
+
+# Set shell to zsh for current user if available
+if [ -e /bin/zsh ]; then
+    echo "Changing shell to zsh for $USER"
+    $SUDO chsh -s /bin/zsh "$USER"
+fi
+
+# Install the dotfiles
+curl -fL https://raw.githubusercontent.com/gavento/dotfiles/refs/heads/main/.local/bin/dotfiles | bash -s - bootstrap-apt
