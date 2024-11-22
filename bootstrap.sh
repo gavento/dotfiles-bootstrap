@@ -45,5 +45,5 @@ if [ -e /bin/zsh ]; then
 fi
 
 # Install the dotfiles
-curl -fL https://raw.githubusercontent.com/gavento/dotfiles/refs/heads/main/.local/bin/dotfiles | bash -s - bootstrap-apt
+curl -fL https://raw.githubusercontent.com/gavento/dotfiles/refs/heads/main/.local/bin/dotfiles | bash -s - bootstrap-system
 
